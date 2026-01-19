@@ -1,0 +1,24 @@
+{
+  "name": "webwaka-core-branding",
+  "version": "0.1.0",
+  "description": "Brand identity, theming, and visual asset management",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "lint": "echo 'Lint not configured yet'",
+    "test": "echo 'Tests not configured yet'"
+  },
+  "keywords": [
+    "webwaka",
+    "branding",
+    "theming"
+  ],
+  "author": "WebWaka Core Team",
+  "license": "TBD",
+  "devDependencies": {
+    "typescript": "^5.3.0"
+  }
+}
