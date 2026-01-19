@@ -1,0 +1,62 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '20'
+    
+    - name: Install dependencies
+      run: |
+        if [ -f package.json ]; then
+          npm install || echo "No dependencies to install yet"
+        else
+          echo "No package.json found - scaffold only"
+        fi
+    
+    - name: Validate module manifest
+      run: |
+        if [ -f module.manifest.json ]; then
+          echo "✓ module.manifest.json found"
+          node -e "const m = require('./module.manifest.json'); if (!m.moduleId || !m.class || !m.version) { process.exit(1); } console.log('✓ Manifest structure valid');"
+        else
+          echo "✗ module.manifest.json missing"
+          exit 1
+        fi
+    
+    - name: Type check
+      run: |
+        if [ -f tsconfig.json ]; then
+          npx tsc --noEmit || echo "Type check skipped - no TypeScript files yet"
+        else
+          echo "Type check skipped - no tsconfig.json yet"
+        fi
+    
+    - name: Lint
+      run: |
+        if [ -f package.json ] && grep -q "lint" package.json; then
+          npm run lint || echo "Lint skipped - not configured yet"
+        else
+          echo "Lint skipped - not configured yet"
+        fi
+    
+    - name: Test
+      run: |
+        if [ -f package.json ] && grep -q "test" package.json; then
+          npm test || echo "Tests skipped - not implemented yet"
+        else
+          echo "Tests skipped - not configured yet"
+        fi

@@ -1,0 +1,21 @@
+{
+  "moduleId": "webwaka-core-branding",
+  "version": "0.1.0",
+  "class": "core",
+  "name": "Branding Core",
+  "description": "Brand identity, theming, and visual asset management",
+  "repository": "https://github.com/changerplanet/webwaka-core-branding",
+  "author": "WebWaka Core Team",
+  "license": "TBD",
+  "capabilities": [],
+  "dependencies": [],
+  "metadata": {
+    "maintainers": [
+      {
+        "name": "WebWaka Core Team",
+        "email": "core@webwaka.io"
+      }
+    ],
+    "license": "TBD"
+  }
+}
