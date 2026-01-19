@@ -7,7 +7,13 @@
   "repository": "https://github.com/changerplanet/webwaka-core-branding",
   "author": "WebWaka Core Team",
   "license": "TBD",
-  "capabilities": [],
+  "capabilities": [
+    "branding:define",
+    "branding:layer.apply",
+    "branding:resolve",
+    "branding:snapshot.generate",
+    "branding:snapshot.verify"
+  ],
   "dependencies": [],
   "metadata": {
     "maintainers": [
