@@ -9,7 +9,9 @@
     "build": "tsc",
     "dev": "tsc --watch",
     "lint": "echo 'Lint not configured yet'",
-    "test": "echo 'Tests not configured yet'"
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage"
   },
   "keywords": [
     "webwaka",
@@ -20,5 +22,10 @@
   "license": "TBD",
   "devDependencies": {
     "typescript": "^5.3.0"
+  },
+  "dependencies": {
+    "@vitest/coverage-v8": "^4.0.17",
+    "vitest": "^4.0.17",
+    "zod": "^4.3.5"
   }
 }

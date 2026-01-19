@@ -1,0 +1,206 @@
+
+✅ PHASE 3E-3 — CORE BRANDING / WHITELABEL
+
+IMPLEMENTATION EXECUTION
+
+⸻
+
+CONTEXT
+
+You are implementing Phase 3E-3: Core Branding / Whitelabel for the WebWaka Modular Rebuild.
+
+This is a CORE SUBSTRATE MODULE.
+
+Repository:
+changerplanet/webwaka-core-branding
+
+This module is a TypeScript-only, headless library.
+
+🚫 NO UI
+🚫 NO asset hosting
+🚫 NO dashboards
+🚫 NO React / Next.js / CSS
+🚫 NO CDN logic
+🚫 NO editors
+
+⸻
+
+CONSTITUTIONAL AUTHORITY
+
+You MUST comply with:
+	•	WebWaka Ecosystem Constitution v1.3.1
+	•	Phase 3E-2 Core Branding Specification (authoritative)
+	•	All Core invariants used in:
+	•	Core Ledger
+	•	Core Pricing
+	•	Core Entitlements
+	•	Core Incentives
+
+Branding MUST behave like Entitlements and Incentives:
+	•	Hierarchical
+	•	Deterministic
+	•	Snapshot-based
+	•	Offline-safe
+	•	Verifiable
+
+⸻
+
+OBJECTIVE
+
+Implement the Core Branding Engine that:
+	•	Resolves branding tokens deterministically
+	•	Enforces hierarchy precedence
+	•	Produces verifiable snapshots
+	•	Works offline
+	•	Is reusable by any Suite, platform, or future system
+
+⸻
+
+SCOPE (IMPLEMENT EXACTLY)
+
+1️⃣ Domain Models (Zod-validated)
+
+Implement the following models:
+	•	BrandingDefinition
+	•	BrandingLayer
+	•	BrandingContext
+	•	ResolvedBranding
+	•	BrandingSnapshot
+
+Token categories MUST include:
+	•	Primitive Tokens
+	•	Semantic Tokens
+	•	Brand Tokens
+	•	Behavioral Tokens (non-visual)
+
+⸻
+
+2️⃣ Branding Engine
+
+Implement a pure, deterministic engine with the following APIs:
+
+resolveBranding(context, layers)
+
+generateBrandingSnapshot(context, layers)
+
+verifyBrandingSnapshot(snapshot)
+
+resolveFromSnapshot(snapshot, evaluationTime?)
+
+Engine MUST:
+	•	Enforce hierarchy strictly
+	•	Ignore expired layers
+	•	Resolve semantic → primitive tokens
+	•	Produce canonical output (stable key order)
+	•	Hash snapshot using SHA-256
+	•	Detect tampering
+
+⸻
+
+3️⃣ Hierarchy Enforcement (LOCKED)
+
+Apply branding in this order (later overrides earlier):
+	1.	System defaults
+	2.	Partner branding
+	3.	Tenant branding
+	4.	Suite branding
+	5.	Component branding
+	6.	Explicit contextual overrides
+
+No exceptions.
+
+⸻
+
+4️⃣ Snapshot Model (MANDATORY)
+	•	Canonical JSON
+	•	Stable sorting
+	•	Deterministic snapshotId
+	•	SHA-256 checksum
+
+Snapshots MUST:
+	•	Be cacheable
+	•	Be verifiable offline
+	•	Produce identical results when evaluated live vs snapshot
+
+⸻
+
+5️⃣ Capabilities Registration
+
+Update module.manifest.json to include:
+
+[
+  "branding:define",
+  "branding:layer.apply",
+  "branding:resolve",
+  "branding:snapshot.generate",
+  "branding:snapshot.verify"
+]
+
+Declare dependencies ONLY if strictly required.
+
+⸻
+
+6️⃣ Tests (REQUIRED)
+
+Implement comprehensive tests proving:
+	•	Determinism (same input → same output, ≥10 runs)
+	•	Hierarchy precedence enforcement
+	•	Time-bound layer expiry handling
+	•	Semantic → primitive resolution
+	•	Snapshot integrity verification
+	•	Offline snapshot evaluation equivalence
+	•	Tenant isolation (no cross-tenant leakage)
+
+Minimum:
+	•	≥80% coverage
+	•	Explicit Hard Stop proof test
+
+⸻
+
+HARD STOP CONDITION (MUST BE PROVEN BY TEST)
+
+A Suite can request branding with a context and receive a deterministic, verifiable branding snapshot, respecting hierarchy, time bounds, and tenant isolation — with no UI code involved.
+
+⸻
+
+EXPLICIT NON-SCOPE (DO NOT IMPLEMENT)
+
+❌ Asset uploads
+❌ Image processing
+❌ CDN
+❌ Theme rendering
+❌ UI components
+❌ Editors
+❌ Persistence / DB
+❌ External APIs
+
+⸻
+
+DELIVERY REQUIREMENTS
+
+When complete, provide:
+	1.	Completion Summary
+	•	What was implemented
+	•	APIs exposed
+	•	Invariants enforced
+	2.	Test Results
+	•	Test count
+	•	Coverage %
+	3.	Hard Stop Proof
+	•	Explicit reference to passing test(s)
+	4.	Final Commit SHA
+
+Then:
+
+⛔ STOP
+⛔ Await explicit authorization before proceeding to any other phase
+
+⸻
+
+ACKNOWLEDGEMENT FORMAT
+
+Reply first with:
+
+“I acknowledge and will implement Phase 3E-3 exactly as specified.”
+
+Then proceed.
