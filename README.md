@@ -2,6 +2,15 @@
 
 **Brand Identity & Visual Asset Management**
 
+## Installation
+
+```bash
+npm install @webwaka/core-branding
+```
+
+**Note**: This package is published to npm registry. GitHub-based installs are no longer supported.
+
+
 ## Overview
 
 This repository is part of the WebWaka Core Substrate. It provides brand identity, theming, and visual asset management services for the WebWaka platform.
