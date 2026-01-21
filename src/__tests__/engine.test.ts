@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import {
   resolveBranding,
   generateBrandingSnapshot,
@@ -7,6 +7,9 @@ import {
   BrandingContext,
   BrandingLayer,
   BrandingSnapshot,
+  CrossTenantAccessError,
+  SnapshotTenantMismatchError,
+  deepFreeze,
 } from '../index.js';
 
 const createUUID = () => crypto.randomUUID();
@@ -16,6 +19,7 @@ const baseContext: BrandingContext = {
   partnerId: '550e8400-e29b-41d4-a716-446655440002',
   suiteId: 'pos',
   componentId: 'checkout',
+  evaluationTime: '2024-06-15T12:00:00.000Z',
 };
 
 function createLayer(overrides: Partial<BrandingLayer>): BrandingLayer {
@@ -82,6 +86,39 @@ describe('Branding Engine', () => {
 
       expect(snapshot1.resolved).toEqual(snapshot2.resolved);
       expect(snapshot1.context).toEqual(snapshot2.context);
+      expect(snapshot1.snapshotId).toBe(snapshot2.snapshotId);
+      expect(snapshot1.checksum).toBe(snapshot2.checksum);
+      expect(snapshot1.generatedAt).toBe(snapshot2.generatedAt);
+    });
+
+    it('requires evaluationTime for deterministic resolution', () => {
+      const context: BrandingContext = {
+        tenantId: '550e8400-e29b-41d4-a716-446655440001',
+      };
+
+      const layers: BrandingLayer[] = [
+        createLayer({
+          id: '550e8400-e29b-41d4-a716-446655440010',
+          tokens: { 'color.primary': '#000000' },
+        }),
+      ];
+
+      expect(() => resolveBranding(context, layers)).toThrow('evaluationTime is required');
+    });
+
+    it('requires evaluationTime for deterministic snapshot generation', () => {
+      const context: BrandingContext = {
+        tenantId: '550e8400-e29b-41d4-a716-446655440001',
+      };
+
+      const layers: BrandingLayer[] = [
+        createLayer({
+          id: '550e8400-e29b-41d4-a716-446655440010',
+          tokens: { 'color.primary': '#000000' },
+        }),
+      ];
+
+      expect(() => generateBrandingSnapshot(context, layers)).toThrow('evaluationTime is required');
     });
   });
 
@@ -477,6 +514,28 @@ describe('Branding Engine', () => {
         expect(resolved.tokens['tenant.id']?.value).toBe(tid);
       }
     });
+
+    it('throws SnapshotTenantMismatchError when resolving snapshot for wrong tenant', () => {
+      const context: BrandingContext = {
+        tenantId: '550e8400-e29b-41d4-a716-446655440001',
+        evaluationTime: '2024-01-15T12:00:00.000Z',
+      };
+
+      const layers: BrandingLayer[] = [
+        createLayer({
+          id: '550e8400-e29b-41d4-a716-446655440010',
+          level: 'system',
+          tokens: { 'color.primary': '#000000' },
+        }),
+      ];
+
+      const snapshot = generateBrandingSnapshot(context, layers);
+      const wrongTenantId = '550e8400-e29b-41d4-a716-446655440099';
+
+      expect(() => resolveFromSnapshot(snapshot, undefined, wrongTenantId)).toThrow(
+        SnapshotTenantMismatchError
+      );
+    });
   });
 
   describe('Disabled Layers', () => {
@@ -503,6 +562,159 @@ describe('Branding Engine', () => {
 
       const resolved = resolveBranding(context, layers);
       expect(resolved.tokens['color.primary'].value).toBe('#000000');
+    });
+  });
+
+  describe('JSON Serialization Round-Trip', () => {
+    it('resolved branding survives JSON round-trip', () => {
+      const context: BrandingContext = {
+        tenantId: '550e8400-e29b-41d4-a716-446655440001',
+        evaluationTime: '2024-01-15T12:00:00.000Z',
+      };
+
+      const layers: BrandingLayer[] = [
+        createLayer({
+          id: '550e8400-e29b-41d4-a716-446655440010',
+          level: 'system',
+          tokens: {
+            'color.primary': '#000000',
+            'spacing.sm': 8,
+            'feature.enabled': true,
+          },
+        }),
+      ];
+
+      const resolved = resolveBranding(context, layers);
+      const serialized = JSON.stringify(resolved);
+      const deserialized = JSON.parse(serialized);
+
+      expect(deserialized).toEqual(resolved);
+      expect(deserialized.contextHash).toBe(resolved.contextHash);
+      expect(deserialized.tokens['color.primary'].value).toBe('#000000');
+      expect(deserialized.tokens['spacing.sm'].value).toBe(8);
+      expect(deserialized.tokens['feature.enabled'].value).toBe(true);
+    });
+
+    it('snapshot survives JSON round-trip', () => {
+      const context: BrandingContext = {
+        tenantId: '550e8400-e29b-41d4-a716-446655440001',
+        evaluationTime: '2024-01-15T12:00:00.000Z',
+      };
+
+      const layers: BrandingLayer[] = [
+        createLayer({
+          id: '550e8400-e29b-41d4-a716-446655440010',
+          level: 'system',
+          tokens: {
+            'color.primary': '#000000',
+            'spacing.sm': 8,
+            'feature.enabled': true,
+          },
+        }),
+      ];
+
+      const snapshot = generateBrandingSnapshot(context, layers);
+      const serialized = JSON.stringify(snapshot);
+      const deserialized = JSON.parse(serialized) as BrandingSnapshot;
+
+      expect(deserialized).toEqual(snapshot);
+      expect(deserialized.snapshotId).toBe(snapshot.snapshotId);
+      expect(deserialized.checksum).toBe(snapshot.checksum);
+
+      const verification = verifyBrandingSnapshot(deserialized);
+      expect(verification.valid).toBe(true);
+    });
+
+    it('context survives JSON round-trip', () => {
+      const context: BrandingContext = {
+        tenantId: '550e8400-e29b-41d4-a716-446655440001',
+        partnerId: '550e8400-e29b-41d4-a716-446655440002',
+        suiteId: 'pos',
+        componentId: 'checkout',
+        evaluationTime: '2024-01-15T12:00:00.000Z',
+        locale: 'en-US',
+      };
+
+      const serialized = JSON.stringify(context);
+      const deserialized = JSON.parse(serialized);
+
+      expect(deserialized).toEqual(context);
+    });
+
+    it('layer survives JSON round-trip', () => {
+      const layer: BrandingLayer = {
+        id: '550e8400-e29b-41d4-a716-446655440010',
+        definitionId: '550e8400-e29b-41d4-a716-446655440020',
+        level: 'tenant',
+        priority: 100,
+        tokens: {
+          'color.primary': '#FF0000',
+          'spacing.md': 16,
+          'animation.enabled': false,
+        },
+        validFrom: '2024-01-01T00:00:00.000Z',
+        validUntil: '2024-12-31T23:59:59.000Z',
+        tenantId: '550e8400-e29b-41d4-a716-446655440001',
+        enabled: true,
+      };
+
+      const serialized = JSON.stringify(layer);
+      const deserialized = JSON.parse(serialized);
+
+      expect(deserialized).toEqual(layer);
+    });
+  });
+
+  describe('Deep Freeze / Immutability', () => {
+    it('resolved branding is frozen', () => {
+      const context: BrandingContext = {
+        tenantId: '550e8400-e29b-41d4-a716-446655440001',
+        evaluationTime: '2024-01-15T12:00:00.000Z',
+      };
+
+      const layers: BrandingLayer[] = [
+        createLayer({
+          id: '550e8400-e29b-41d4-a716-446655440010',
+          level: 'system',
+          tokens: { 'color.primary': '#000000' },
+        }),
+      ];
+
+      const resolved = resolveBranding(context, layers);
+      expect(Object.isFrozen(resolved)).toBe(true);
+    });
+
+    it('snapshot is frozen', () => {
+      const context: BrandingContext = {
+        tenantId: '550e8400-e29b-41d4-a716-446655440001',
+        evaluationTime: '2024-01-15T12:00:00.000Z',
+      };
+
+      const layers: BrandingLayer[] = [
+        createLayer({
+          id: '550e8400-e29b-41d4-a716-446655440010',
+          level: 'system',
+          tokens: { 'color.primary': '#000000' },
+        }),
+      ];
+
+      const snapshot = generateBrandingSnapshot(context, layers);
+      expect(Object.isFrozen(snapshot)).toBe(true);
+    });
+
+    it('deepFreeze utility freezes nested objects', () => {
+      const obj = {
+        a: 1,
+        b: {
+          c: 2,
+          d: [3, 4, { e: 5 }],
+        },
+      };
+
+      const frozen = deepFreeze(obj);
+      expect(Object.isFrozen(frozen)).toBe(true);
+      expect(Object.isFrozen(frozen.b)).toBe(true);
+      expect(Object.isFrozen(frozen.b.d)).toBe(true);
     });
   });
 

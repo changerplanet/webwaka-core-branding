@@ -1,0 +1,191 @@
+
+PHASE 3E-3 — CORE BRANDING / WHITELABEL (EXECUTION PROMPT)
+
+CONTEXT (READ CAREFULLY)
+
+You are implementing Phase 3E-3: webwaka-core-branding.
+
+This is a HEADLESS, PURE TypeScript LIBRARY.
+
+🚫 NO UI
+🚫 NO CSS / Tailwind / rendering
+🚫 NO persistence / database
+🚫 NO feature flags logic
+🚫 NO permissions / entitlements logic
+🚫 NO network calls
+🚫 NO Date.now(), randomness, or mutation
+
+This implementation MUST strictly follow the Phase 3E-2 Formal Specification and the WebWaka Ecosystem Constitution v1.5+.
+
+⸻
+
+SOURCE OF TRUTH (IMMUTABLE)
+	•	GitHub Repo: changerplanet/webwaka-core-branding
+	•	Branch: main
+	•	Registry already exists
+	•	Vercel exists (library-only; no runtime)
+	•	Currency: irrelevant here (tokens only)
+	•	Determinism + tenant isolation are non-negotiable
+
+⸻
+
+REQUIRED SETUP (DO THIS FIRST)
+	1.	Clone the repository
+	•	Clone changerplanet/webwaka-core-branding
+	•	If empty, DO NOT add placeholders
+	•	If Replit auto-adds files, DELETE them immediately
+	2.	Project Type
+	•	TypeScript-only library
+	•	No framework presets
+	•	Node 20 compatible
+
+⸻
+
+IMPLEMENTATION REQUIREMENTS
+
+1️⃣ DOMAIN MODELS (Zod-validated)
+
+Implement immutable models:
+	•	BrandingTokenValue
+	•	BrandingLayer
+	•	BrandingContext
+	•	ResolvedToken
+	•	ResolvedBranding
+	•	BrandingSnapshot
+
+Rules:
+	•	Readonly everywhere
+	•	Deep freeze exports
+	•	JSON-serializable
+
+⸻
+
+2️⃣ TOKEN CATEGORIES (DATA ONLY)
+
+Support these categories (no behavior):
+	•	Primitive tokens
+	•	Semantic tokens
+	•	Brand tokens
+	•	Behavioral tokens
+
+Tokens are plain values (string | number | boolean).
+
+⸻
+
+3️⃣ HIERARCHY (LOCKED)
+
+Enforce exact precedence:
+
+system < partner < tenant < suite < component < contextual
+
+Higher overrides lower.
+No ambiguity.
+No merging randomness.
+
+⸻
+
+4️⃣ TIME-BOUND LAYERS
+	•	validFrom?
+	•	validTo?
+
+Rules:
+	•	Use context.evaluationTime
+	•	Ignore invalid layers
+	•	Never use system time
+
+⸻
+
+5️⃣ CORE ENGINE (PURE)
+
+Implement:
+
+resolveBranding(context, layers): ResolvedBranding
+
+Guarantees:
+	•	Deterministic
+	•	Stable key ordering
+	•	No input mutation
+	•	Explainability (source layer per token)
+
+⸻
+
+6️⃣ SNAPSHOT SYSTEM (MANDATORY)
+
+Implement:
+	•	generateBrandingSnapshot(context, layers)
+	•	verifyBrandingSnapshot(snapshot)
+	•	resolveFromSnapshot(snapshot, evaluationTime?)
+
+Snapshot requirements:
+	•	SHA-256 checksum
+	•	Tenant-bound
+	•	Tamper detection
+	•	Offline-safe
+	•	Deterministic snapshot IDs
+
+⸻
+
+7️⃣ TENANT ISOLATION (CRITICAL)
+	•	Every layer must match context.tenantId
+	•	Snapshot verification MUST validate tenantId
+	•	Violations throw CrossTenantAccessError
+
+⸻
+
+8️⃣ TESTS (MANDATORY)
+
+Minimum tests to include:
+	•	✅ Determinism (10× identical output)
+	•	✅ Hierarchy precedence correctness
+	•	✅ Time-bound layer exclusion
+	•	✅ Snapshot generation & verification
+	•	✅ Snapshot tampering detection
+	•	✅ Tenant isolation (live + snapshot)
+	•	✅ JSON serialization round-trip
+
+Coverage target: ≥80%
+
+⸻
+
+9️⃣ CAPABILITIES REGISTRATION
+
+Update module.manifest.json with:
+
+[
+  "branding:resolve",
+  "branding:snapshot.generate",
+  "branding:snapshot.verify"
+]
+
+
+⸻
+
+10️⃣ SCOPE ENFORCEMENT (VERIFY BEFORE COMMIT)
+
+Before pushing:
+	•	✅ npm test passes
+	•	✅ npm run build passes
+	•	✅ No UI / CSS files exist
+	•	✅ No Date.now / randomness
+	•	✅ No permissions / flags / entitlements logic
+	•	✅ No persistence code
+
+⸻
+
+HARD STOP
+
+After implementation:
+
+⛔ STOP
+⛔ Do NOT proceed to Phase 3F
+⛔ Await formal review and authorization
+
+⸻
+
+ACKNOWLEDGEMENT FORMAT
+
+Reply only with:
+
+“Phase 3E-3 acknowledged. Implementing exactly as specified.”
+
+Then execute.

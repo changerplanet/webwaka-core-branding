@@ -5,20 +5,26 @@ import {
   BrandingSnapshotSchema,
   ResolvedBranding,
 } from '../models/branding.js';
-import { computeChecksum, generateSnapshotId, canonicalStringify, sha256 } from '../utils/hash.js';
+import { computeChecksum, generateSnapshotId } from '../utils/hash.js';
+import { deepFreeze } from '../utils/freeze.js';
 import { resolveBranding } from './resolver.js';
+import { SnapshotTenantMismatchError } from '../errors/index.js';
 
 export interface SnapshotVerificationResult {
-  valid: boolean;
-  errors: string[];
+  readonly valid: boolean;
+  readonly errors: readonly string[];
 }
 
 export function generateBrandingSnapshot(
   context: BrandingContext,
-  layers: BrandingLayer[]
-): BrandingSnapshot {
-  const generatedAt = new Date().toISOString();
-  const resolved = resolveBranding(context, layers);
+  layers: readonly BrandingLayer[]
+): Readonly<BrandingSnapshot> {
+  if (!context.evaluationTime) {
+    throw new Error('evaluationTime is required in context for deterministic snapshot generation');
+  }
+
+  const generatedAt = context.evaluationTime;
+  const resolved = resolveBranding(context, layers as BrandingLayer[]);
 
   const layerIds = layers.map((l) => l.id);
 
@@ -39,17 +45,20 @@ export function generateBrandingSnapshot(
     checksum,
   };
 
-  return snapshot;
+  return deepFreeze(snapshot);
 }
 
-export function verifyBrandingSnapshot(snapshot: BrandingSnapshot): SnapshotVerificationResult {
+export function verifyBrandingSnapshot(
+  snapshot: BrandingSnapshot,
+  evaluationTime?: string
+): Readonly<SnapshotVerificationResult> {
   const errors: string[] = [];
 
   try {
     BrandingSnapshotSchema.parse(snapshot);
   } catch (e) {
     errors.push(`Schema validation failed: ${String(e)}`);
-    return { valid: false, errors };
+    return deepFreeze({ valid: false, errors });
   }
 
   const { checksum, snapshotId, expiresAt, ...snapshotData } = snapshot;
@@ -64,26 +73,32 @@ export function verifyBrandingSnapshot(snapshot: BrandingSnapshot): SnapshotVeri
     errors.push('Snapshot ID mismatch: snapshot metadata has been modified');
   }
 
-  if (expiresAt) {
+  if (expiresAt && evaluationTime) {
     const expiryDate = new Date(expiresAt);
-    if (new Date() > expiryDate) {
+    const evalDate = new Date(evaluationTime);
+    if (evalDate > expiryDate) {
       errors.push('Snapshot has expired');
     }
   }
 
-  return {
+  return deepFreeze({
     valid: errors.length === 0,
     errors,
-  };
+  });
 }
 
 export function resolveFromSnapshot(
   snapshot: BrandingSnapshot,
-  evaluationTime?: string
-): ResolvedBranding {
-  const verification = verifyBrandingSnapshot(snapshot);
+  evaluationTime?: string,
+  contextTenantId?: string
+): Readonly<ResolvedBranding> {
+  const verification = verifyBrandingSnapshot(snapshot, evaluationTime);
   if (!verification.valid) {
     throw new Error(`Invalid snapshot: ${verification.errors.join(', ')}`);
+  }
+
+  if (contextTenantId && contextTenantId !== snapshot.context.tenantId) {
+    throw new SnapshotTenantMismatchError(snapshot.context.tenantId, contextTenantId);
   }
 
   if (evaluationTime) {
@@ -102,5 +117,5 @@ export function resolveFromSnapshot(
     }
   }
 
-  return snapshot.resolved;
+  return deepFreeze(snapshot.resolved);
 }

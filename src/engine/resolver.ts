@@ -3,11 +3,11 @@ import {
   BrandingLayer,
   ResolvedBranding,
   ResolvedToken,
-  HIERARCHY_ORDER,
   getHierarchyPriority,
-  type HierarchyLevel,
 } from '../models/branding.js';
 import { sha256, canonicalStringify } from '../utils/hash.js';
+import { deepFreeze } from '../utils/freeze.js';
+import { CrossTenantAccessError } from '../errors/index.js';
 
 function isLayerActive(layer: BrandingLayer, evaluationTime: Date): boolean {
   if (!layer.enabled) return false;
@@ -23,6 +23,12 @@ function isLayerActive(layer: BrandingLayer, evaluationTime: Date): boolean {
   }
 
   return true;
+}
+
+function validateTenantAccess(layer: BrandingLayer, context: BrandingContext): void {
+  if (layer.level === 'tenant' && layer.tenantId && layer.tenantId !== context.tenantId) {
+    throw new CrossTenantAccessError(layer.tenantId, context.tenantId);
+  }
 }
 
 function isLayerApplicable(layer: BrandingLayer, context: BrandingContext): boolean {
@@ -45,7 +51,7 @@ function isLayerApplicable(layer: BrandingLayer, context: BrandingContext): bool
   return true;
 }
 
-function sortLayers(layers: BrandingLayer[]): BrandingLayer[] {
+function sortLayers(layers: readonly BrandingLayer[]): BrandingLayer[] {
   return [...layers].sort((a, b) => {
     const levelA = getHierarchyPriority(a.level);
     const levelB = getHierarchyPriority(b.level);
@@ -95,11 +101,13 @@ function resolveSemanticTokens(
 
 export function resolveBranding(
   context: BrandingContext,
-  layers: BrandingLayer[]
-): ResolvedBranding {
-  const evaluationTime = context.evaluationTime
-    ? new Date(context.evaluationTime)
-    : new Date();
+  layers: readonly BrandingLayer[]
+): Readonly<ResolvedBranding> {
+  if (!context.evaluationTime) {
+    throw new Error('evaluationTime is required in context for deterministic resolution');
+  }
+
+  const evaluationTime = new Date(context.evaluationTime);
 
   const activeLayers = layers.filter(
     (layer) => isLayerActive(layer, evaluationTime) && isLayerApplicable(layer, context)
@@ -111,6 +119,7 @@ export function resolveBranding(
   const appliedLayers: string[] = [];
 
   for (const layer of sortedLayers) {
+    validateTenantAccess(layer, context);
     appliedLayers.push(layer.id);
 
     for (const [key, value] of Object.entries(layer.tokens)) {
@@ -125,15 +134,21 @@ export function resolveBranding(
 
   const resolvedTokens = resolveSemanticTokens(tokens);
 
+  const stableTokenKeys = Object.keys(resolvedTokens).sort();
+  const stableTokens: Record<string, ResolvedToken> = {};
+  for (const key of stableTokenKeys) {
+    stableTokens[key] = resolvedTokens[key];
+  }
+
   const contextHash = sha256(canonicalStringify(context));
 
   const resolved: ResolvedBranding = {
     contextHash,
     tenantId: context.tenantId,
-    tokens: resolvedTokens,
+    tokens: stableTokens,
     appliedLayers,
     resolvedAt: evaluationTime.toISOString(),
   };
 
-  return resolved;
+  return deepFreeze(resolved);
 }
