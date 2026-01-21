@@ -1,5 +1,5 @@
 {
-  "name": "webwaka-core-branding",
+  "name": "@webwaka/core-branding",
   "version": "0.1.0",
   "description": "Brand identity, theming, and visual asset management",
   "main": "dist/index.js",
@@ -28,5 +28,8 @@
     "@vitest/coverage-v8": "^4.0.17",
     "vitest": "^4.0.17",
     "zod": "^4.3.5"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }
