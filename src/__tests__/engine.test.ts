@@ -325,7 +325,7 @@ describe('Branding Engine', () => {
       ];
 
       const snapshot = generateBrandingSnapshot(context, layers);
-      const verification = verifyBrandingSnapshot(snapshot);
+      const verification = verifyBrandingSnapshot(snapshot, context.evaluationTime!);
 
       expect(verification.valid).toBe(true);
       expect(verification.errors).toHaveLength(0);
@@ -359,7 +359,7 @@ describe('Branding Engine', () => {
         },
       };
 
-      const verification = verifyBrandingSnapshot(tamperedSnapshot);
+      const verification = verifyBrandingSnapshot(tamperedSnapshot, context.evaluationTime!);
       expect(verification.valid).toBe(false);
       expect(verification.errors.some((e) => e.includes('Checksum mismatch'))).toBe(true);
     });
@@ -383,7 +383,7 @@ describe('Branding Engine', () => {
         snapshotId: 'tampered-id-12345678901234567890',
       };
 
-      const verification = verifyBrandingSnapshot(tamperedSnapshot);
+      const verification = verifyBrandingSnapshot(tamperedSnapshot, context.evaluationTime!);
       expect(verification.valid).toBe(false);
     });
   });
@@ -411,7 +411,7 @@ describe('Branding Engine', () => {
 
       const liveResolved = resolveBranding(context, layers);
       const snapshot = generateBrandingSnapshot(context, layers);
-      const offlineResolved = resolveFromSnapshot(snapshot);
+      const offlineResolved = resolveFromSnapshot(snapshot, context.evaluationTime!);
 
       expect(offlineResolved.tokens).toEqual(liveResolved.tokens);
       expect(offlineResolved.tenantId).toBe(liveResolved.tenantId);
@@ -434,7 +434,7 @@ describe('Branding Engine', () => {
         checksum: 'wrong-checksum',
       } as BrandingSnapshot;
 
-      expect(() => resolveFromSnapshot(invalidSnapshot)).toThrow('Invalid snapshot');
+      expect(() => resolveFromSnapshot(invalidSnapshot, '2024-01-15T12:00:00.000Z')).toThrow('Invalid snapshot');
     });
   });
 
@@ -532,7 +532,7 @@ describe('Branding Engine', () => {
       const snapshot = generateBrandingSnapshot(context, layers);
       const wrongTenantId = '550e8400-e29b-41d4-a716-446655440099';
 
-      expect(() => resolveFromSnapshot(snapshot, undefined, wrongTenantId)).toThrow(
+      expect(() => resolveFromSnapshot(snapshot, context.evaluationTime!, wrongTenantId)).toThrow(
         SnapshotTenantMismatchError
       );
     });
@@ -621,7 +621,7 @@ describe('Branding Engine', () => {
       expect(deserialized.snapshotId).toBe(snapshot.snapshotId);
       expect(deserialized.checksum).toBe(snapshot.checksum);
 
-      const verification = verifyBrandingSnapshot(deserialized);
+      const verification = verifyBrandingSnapshot(deserialized, context.evaluationTime!);
       expect(verification.valid).toBe(true);
     });
 
@@ -792,7 +792,7 @@ describe('Branding Engine', () => {
       expect(snapshot.checksum).toBeDefined();
       expect(snapshot.checksum.length).toBe(64);
 
-      const verification = verifyBrandingSnapshot(snapshot);
+      const verification = verifyBrandingSnapshot(snapshot, suiteContext.evaluationTime!);
       expect(verification.valid).toBe(true);
 
       expect(snapshot.resolved.tokens['color.primary'].value).toBe('#FF5500');
@@ -820,7 +820,7 @@ describe('Branding Engine', () => {
         expect(result).toBe(firstResult);
       }
 
-      const offlineResolved = resolveFromSnapshot(snapshot);
+      const offlineResolved = resolveFromSnapshot(snapshot, suiteContext.evaluationTime!);
       expect(offlineResolved.tokens).toEqual(snapshot.resolved.tokens);
     });
   });

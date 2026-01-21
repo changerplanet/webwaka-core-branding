@@ -50,7 +50,7 @@ export function generateBrandingSnapshot(
 
 export function verifyBrandingSnapshot(
   snapshot: BrandingSnapshot,
-  evaluationTime?: string
+  evaluationTime: string
 ): Readonly<SnapshotVerificationResult> {
   const errors: string[] = [];
 
@@ -73,7 +73,7 @@ export function verifyBrandingSnapshot(
     errors.push('Snapshot ID mismatch: snapshot metadata has been modified');
   }
 
-  if (expiresAt && evaluationTime) {
+  if (expiresAt) {
     const expiryDate = new Date(expiresAt);
     const evalDate = new Date(evaluationTime);
     if (evalDate > expiryDate) {
@@ -89,7 +89,7 @@ export function verifyBrandingSnapshot(
 
 export function resolveFromSnapshot(
   snapshot: BrandingSnapshot,
-  evaluationTime?: string,
+  evaluationTime: string,
   contextTenantId?: string
 ): Readonly<ResolvedBranding> {
   const verification = verifyBrandingSnapshot(snapshot, evaluationTime);
@@ -101,19 +101,17 @@ export function resolveFromSnapshot(
     throw new SnapshotTenantMismatchError(snapshot.context.tenantId, contextTenantId);
   }
 
-  if (evaluationTime) {
-    const evalTime = new Date(evaluationTime);
-    const snapshotTime = new Date(snapshot.generatedAt);
+  const evalTime = new Date(evaluationTime);
+  const snapshotTime = new Date(snapshot.generatedAt);
 
-    if (evalTime < snapshotTime) {
-      throw new Error('Evaluation time cannot be before snapshot generation time');
-    }
+  if (evalTime < snapshotTime) {
+    throw new Error('Evaluation time cannot be before snapshot generation time');
+  }
 
-    if (snapshot.expiresAt) {
-      const expiryTime = new Date(snapshot.expiresAt);
-      if (evalTime > expiryTime) {
-        throw new Error('Snapshot has expired for the given evaluation time');
-      }
+  if (snapshot.expiresAt) {
+    const expiryTime = new Date(snapshot.expiresAt);
+    if (evalTime > expiryTime) {
+      throw new Error('Snapshot has expired for the given evaluation time');
     }
   }
 
